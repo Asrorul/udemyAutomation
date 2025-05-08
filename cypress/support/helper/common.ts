@@ -1,5 +1,4 @@
-export function getFileNameWithOutExtension(path: string): string {
-    // get file name without extension
-    // Example: If path is 'path/to/file.txt', returns 'file'
-    return path.match(/([^\/\\]+)(?=\.\w+$)/)?.[1] ?? '';
-  }
+export function generateRandomEmail() {
+  const timestamp = Date.now().toString(36); // base-36 encoding
+  return `udemy${timestamp}@yopmail.com`;
+}

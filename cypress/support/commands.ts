@@ -1,32 +1,42 @@
-import 'cypress-file-upload';
-import 'cypress-iframe';
-import { getFileNameWithOutExtension } from './helper/common';
+import "cypress-file-upload";
+import "cypress-iframe";
+import { getFileNameWithOutExtension } from "./helper/common";
 
-Cypress.Commands.add('selectValue', (element, value) => {
+Cypress.Commands.add("selectValue", (element, value) => {
   cy.get(`[data-testid="${element}"]`).click();
   cy.contains(value).click();
 });
 
-Cypress.Commands.add('typeInput', (element, value, settings = {}) => {
-  const { delay = 100, delayBefore = 100, isCurrency = false, isTextEditor = false, isAutoSave = false, index = 0, retries = 3 } = settings;
+Cypress.Commands.add("typeInput", (element, value, settings = {}) => {
+  const {
+    delay = 100,
+    delayBefore = 100,
+    isCurrency = false,
+    isTextEditor = false,
+    isAutoSave = false,
+    index = 0,
+    retries = 3,
+  } = settings;
 
   // Function to type the value with retry mechanism
   const typeValue = (attempt = 1) => {
     // Get the element and check its current value
-    cy.get(element).then($input => {
+    cy.get(element).then(($input) => {
       let currentValue;
       if (isTextEditor) {
-        currentValue = $input.eq(index).find('p').text();
+        currentValue = $input.eq(index).find("p").text();
       } else {
         currentValue = $input.val();
       }
-      const formattedValue = isCurrency ? parseInt(value).toLocaleString('id-ID') : value;
-      const alias = value.split(' ')[0];
+      const formattedValue = isCurrency
+        ? parseInt(value).toLocaleString("id-ID")
+        : value;
+      const alias = value.split(" ")[0];
 
       // If the current value is not equal to the formatted value, proceed with the typing process
       if (currentValue !== formattedValue) {
         cy.get(`${element}`).eq(index).as(`type_${alias}`);
-        cy.get(`@type_${alias}`).should('be.visible');
+        cy.get(`@type_${alias}`).should("be.visible");
 
         // Function to clear the input field with retry mechanism
         const clearField = (clearAttempt = 1) => {
@@ -34,14 +44,16 @@ Cypress.Commands.add('typeInput', (element, value, settings = {}) => {
           cy.get(`@type_${alias}`)
             .focus()
             .clear()
-            .then($fieldValue => {
+            .then(($fieldValue) => {
               const finalValue = $fieldValue.val();
               const finalText = $fieldValue.text();
-              if (finalValue !== '' || finalText !== '') {
+              if (finalValue !== "" || finalText !== "") {
                 if (clearAttempt < clearRetries) {
                   clearField(clearAttempt + 1);
                 } else {
-                  cy.get(`@type_${alias}`).should('have.value', '').and('have.text', '');
+                  cy.get(`@type_${alias}`)
+                    .should("have.value", "")
+                    .and("have.text", "");
                 }
               }
             });
@@ -55,10 +67,10 @@ Cypress.Commands.add('typeInput', (element, value, settings = {}) => {
           .focus()
           .blur()
           .wait(delayBefore)
-          .then($finalInput => {
+          .then(($finalInput) => {
             let finalValue;
             if (isTextEditor) {
-              finalValue = $finalInput.eq(index).find('p').text();
+              finalValue = $finalInput.eq(index).find("p").text();
             } else {
               finalValue = $finalInput.val();
             }
@@ -68,7 +80,10 @@ Cypress.Commands.add('typeInput', (element, value, settings = {}) => {
               typeValue(attempt + 1);
             }
 
-            if (isAutoSave && (finalValue === formattedValue || attempt >= retries)) {
+            if (
+              isAutoSave &&
+              (finalValue === formattedValue || attempt >= retries)
+            ) {
               cy.waitAutoSaved();
             }
           });
@@ -79,27 +94,36 @@ Cypress.Commands.add('typeInput', (element, value, settings = {}) => {
   typeValue();
 });
 
-Cypress.Commands.add('selectDropDown', (element, value, settings = {}) => {
-  const { apiToWait = null, delayBefore = 100, retries = 3, index = 0 } = settings;
+Cypress.Commands.add("selectDropDown", (element, value, settings = {}) => {
+  const {
+    apiToWait = null,
+    delayBefore = 100,
+    retries = 3,
+    index = 0,
+  } = settings;
 
   const attemptClickAndWait = (attempt: number) => {
     if (attempt > retries) {
-      throw new Error(`Failed to select ${value} from ${element} after ${retries} retries`);
+      throw new Error(
+        `Failed to select ${value} from ${element} after ${retries} retries`,
+      );
     }
 
     cy.get(element).eq(index).click();
     const clickAndWait = () => {
-      cy.get('body').then(body => {
+      cy.get("body").then((body) => {
         if (body.find(`.mantine-Select-item:contains("${value}")`).length > 0) {
-          cy.get('.mantine-Select-dropdown').within(() => {
-            cy.get('.mantine-Select-item')
+          cy.get(".mantine-Select-dropdown").within(() => {
+            cy.get(".mantine-Select-item")
               .filter((index, item) => {
                 return Cypress.$(item).text().trim() === value;
               })
               .click();
           });
           if (apiToWait) {
-            cy.wait(`@api_result_${value}`).its('response.statusCode').should('eql', 200);
+            cy.wait(`@api_result_${value}`)
+              .its("response.statusCode")
+              .should("eql", 200);
           }
         } else {
           cy.wait(delayBefore);
@@ -109,14 +133,14 @@ Cypress.Commands.add('selectDropDown', (element, value, settings = {}) => {
     };
 
     if (apiToWait) {
-      cy.intercept('GET', apiToWait).as(`api_result_${value}`);
+      cy.intercept("GET", apiToWait).as(`api_result_${value}`);
     }
     clickAndWait();
   };
 
   cy.get(element)
     .eq(index)
-    .then($inputValue => {
+    .then(($inputValue) => {
       const selectedData = $inputValue.val();
       if (selectedData !== value) {
         cy.wait(delayBefore);
@@ -126,9 +150,12 @@ Cypress.Commands.add('selectDropDown', (element, value, settings = {}) => {
     });
 });
 
-Cypress.Commands.add('forceWaitingLoadElement', (wait = Cypress.env('waitTimeDefault')) => {
-  cy.wait(wait);
-});
+Cypress.Commands.add(
+  "forceWaitingLoadElement",
+  (wait = Cypress.env("waitTimeDefault")) => {
+    cy.wait(wait);
+  },
+);
 
 /**
  * Custom command to paste an image.
@@ -140,22 +167,22 @@ Cypress.Commands.add('forceWaitingLoadElement', (wait = Cypress.env('waitTimeDef
  * cy.pasteImage('#root_shariaAspect_shariaAnalysis .ql-editor', './attachment/1. KTP.jpg');
  */
 
-Cypress.Commands.add('pasteImage', (selector, imagePath) => {
-  cy.get(selector).then($editor => {
+Cypress.Commands.add("pasteImage", (selector, imagePath) => {
+  cy.get(selector).then(($editor) => {
     // Read the image file as base64
-    cy.fixture(imagePath, 'base64').then(base64String => {
+    cy.fixture(imagePath, "base64").then((base64String) => {
       // Create a Blob from the base64 string
-      const blob = Cypress.Blob.base64StringToBlob(base64String, 'image/jpeg'); // Adjust type if needed
+      const blob = Cypress.Blob.base64StringToBlob(base64String, "image/jpeg"); // Adjust type if needed
 
       // Create a File object from the Blob
-      const file = new File([blob], 'image.png', { type: 'image/jpeg' }); // Adjust type and filename if needed
+      const file = new File([blob], "image.png", { type: "image/jpeg" }); // Adjust type and filename if needed
 
       // Create a DataTransfer object and add the File item
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
 
       // Trigger the paste event
-      const pasteEvent = new ClipboardEvent('paste', {
+      const pasteEvent = new ClipboardEvent("paste", {
         clipboardData: dataTransfer,
         bubbles: true,
         cancelable: true, // Ensure event is cancelable
@@ -167,12 +194,12 @@ Cypress.Commands.add('pasteImage', (selector, imagePath) => {
   });
 });
 
-Cypress.Commands.add('uploadFile', (elementName, documentPath) => {
+Cypress.Commands.add("uploadFile", (elementName, documentPath) => {
   cy.get(`input[type="file"][name="${elementName}"]`).attachFile(documentPath);
 });
 
-Cypress.Commands.add('checkIfFileExists', filePath => {
-  cy.task('fileExists', filePath).then(exists => {
+Cypress.Commands.add("checkIfFileExists", (filePath) => {
+  cy.task("fileExists", filePath).then((exists) => {
     return exists;
   });
 });
